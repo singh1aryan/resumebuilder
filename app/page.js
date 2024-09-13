@@ -1,101 +1,432 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState } from 'react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+// import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { PlusCircle, Trash2, Wand2 } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
+// Simulated OpenAI API call
+// const generateAIContent = async (prompt: string): Promise<string> => {
+//   // In a real implementation, this would be an API call to OpenAI
+//   await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+//   return `AI-generated content for: ${prompt}`;
+// }
+
+export default function ResumeBuilder() {
+  const [resume, setResume] = useState({
+    name: 'Jake Ryan',
+    contact: '123-456-7890 | jake@su.edu | linkedin.com/in/jake | github.com/jake',
+    education: [
+      {
+        school: 'Southwestern University',
+        degree: 'Bachelor of Arts in Computer Science, Minor in Business',
+        location: 'Georgetown, TX',
+        date: 'Aug. 2018 - May 2021'
+      },
+      {
+        school: 'Blinn College',
+        degree: 'Associate\'s in Liberal Arts',
+        location: 'Bryan, TX',
+        date: 'Aug. 2014 - May 2018'
+      }
+    ],
+    experience: [
+      {
+        title: 'Undergraduate Research Assistant',
+        company: 'Texas A&M University',
+        location: 'College Station, TX',
+        date: 'June 2020 - Present',
+        details: [
+          'Developed a REST API using FastAPI and PostgreSQL to store data from learning management systems',
+          'Developed a full-stack web application using Flask, React, PostgreSQL and Docker to analyze GitHub data',
+          'Explored ways to visualize GitHub collaboration in a classroom setting'
+        ]
+      },
+      {
+        title: 'Information Technology Support Specialist',
+        company: 'Southwestern University',
+        location: 'Georgetown, TX',
+        date: 'Sep. 2018 - Present',
+        details: [
+          'Communicate with managers to set up campus computers used on campus',
+          'Assess and troubleshoot computer problems brought by students, faculty and staff',
+          'Maintain upkeep of computers, classroom equipment, and 200 printers across campus'
+        ]
+      },
+      {
+        title: 'Artificial Intelligence Research Assistant',
+        company: 'Southwestern University',
+        location: 'Georgetown, TX',
+        date: 'May 2019 - July 2019',
+        details: [
+          'Explored methods to generate video game dungeons based off of The Legend of Zelda',
+          'Developed a game in Java to test the generated dungeons',
+          'Contributed 50K+ lines of code to an established codebase via Git',
+          'Conducted a human subject study to determine which video game dungeon generation technique is enjoyable',
+          'Wrote an 8-page paper and gave multiple presentations on-campus',
+          'Presented virtually to the World Conference on Computational Intelligence'
+        ]
+      }
+    ],
+    projects: [
+      {
+        name: 'Gitlytics',
+        technologies: 'Python, Flask, React, PostgreSQL, Docker',
+        date: 'June 2020 - Present',
+        details: [
+          'Developed a full-stack web application using with Flask serving a REST API with React as the frontend',
+          'Implemented GitHub OAuth to get data from user\'s repositories',
+          'Visualized GitHub data to show collaboration',
+          'Used Celery and Redis for asynchronous tasks'
+        ]
+      },
+      {
+        name: 'Simple Paintball',
+        technologies: 'Spigot API, Java, Maven, TravisCI, Git',
+        date: 'May 2018 - May 2020',
+        details: [
+          'Developed a Minecraft server plugin to entertain kids during free time for a previous job',
+          'Published plugin to websites gaining 2K+ downloads and an average 4.5/5-star review',
+          'Implemented continuous delivery using TravisCI to build the plugin upon new a release',
+          'Collaborated with Minecraft server administrators to suggest features and get feedback about the plugin'
+        ]
+      }
+    ],
+    skills: {
+      languages: 'Java, Python, C/C++, SQL (Postgres), JavaScript, HTML/CSS, R',
+      frameworks: 'React, Node.js, Flask, JUnit, WordPress, Material-UI, FastAPI',
+      developerTools: 'Git, Docker, TravisCI, Google Cloud Platform, VS Code, Visual Studio, PyCharm, IntelliJ, Eclipse',
+      libraries: 'pandas, NumPy, Matplotlib'
+    }
+  })
+
+  const updateResume = (field, value) => {
+    setResume(prev => ({ ...prev, [field]: value }))
+  }
+
+  const updateNestedField = (section, index, field, value) => {
+    setResume(prev => {
+      const newSection = [...prev[section]]
+      newSection[index] = { ...newSection[index], [field]: value }
+      return { ...prev, [section]: newSection }
+    })
+  }
+
+  const addItem = (section, item) => {
+    setResume(prev => ({ ...prev, [section]: [...prev[section], item] }))
+  }
+
+  const removeItem = (section, index) => {
+    setResume(prev => ({
+      ...prev,
+      [section]: prev[section].filter((_, i) => i !== index)
+    }))
+  }
+
+  const updateDetail = (section, itemIndex, detailIndex, value) => {
+    setResume(prev => {
+      const newSection = [...prev[section]]
+      newSection[itemIndex] = {
+        ...newSection[itemIndex],
+        details: newSection[itemIndex].details.map((detail, i) =>
+          i === detailIndex ? value : detail
+        )
+      }
+      return { ...prev, [section]: newSection }
+    })
+  }
+
+  const addDetail = (section, itemIndex) => {
+    setResume(prev => {
+      const newSection = [...prev[section]]
+      newSection[itemIndex] = {
+        ...newSection[itemIndex],
+        details: [...newSection[itemIndex].details, '']
+      }
+      return { ...prev, [section]: newSection }
+    })
+  }
+
+  const removeDetail = (section, itemIndex, detailIndex) => {
+    setResume(prev => {
+      const newSection = [...prev[section]]
+      newSection[itemIndex] = {
+        ...newSection[itemIndex],
+        details: newSection[itemIndex].details.filter((_, i) => i !== detailIndex)
+      }
+      return { ...prev, [section]: newSection }
+    })
+  }
+
+  const generateAIDetail = async (section, itemIndex, detailIndex) => {
+    const item = resume[section][itemIndex];
+    const prompt = `Generate a bullet point for a resume ${section} section. 
+                    Role: ${item.title || item.name}. 
+                    Company/Project: ${item.company || item.technologies}. 
+                    Current detail: ${item.details[detailIndex]}`;
+    
+    const aiContent = await generateAIContent(prompt);
+    
+    updateDetail(section, itemIndex, detailIndex, aiContent);
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <div className="flex flex-col md:flex-row h-screen">
+      <div className="w-full md:w-1/2 p-4 overflow-y-auto">
+        <h2 className="text-2xl font-bold mb-4">Resume Builder</h2>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={resume.name}
+              onChange={(e) => updateResume('name', e.target.value)}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </div>
+          <div>
+            <Label htmlFor="contact">Contact Information</Label>
+            <Input
+              id="contact"
+              value={resume.contact}
+              onChange={(e) => updateResume('contact', e.target.value)}
+            />
+          </div>
+          
+          <h3 className="text-xl font-semibold mt-4">Education</h3>
+          {resume.education.map((edu, index) => (
+            <div key={index} className="space-y-2 p-2 border rounded">
+              <Input
+                placeholder="School"
+                value={edu.school}
+                onChange={(e) => updateNestedField('education', index, 'school', e.target.value)}
+              />
+              <Input
+                placeholder="Degree"
+                value={edu.degree}
+                onChange={(e) => updateNestedField('education', index, 'degree', e.target.value)}
+              />
+              <Input
+                placeholder="Location"
+                value={edu.location}
+                onChange={(e) => updateNestedField('education', index, 'location', e.target.value)}
+              />
+              <Input
+                placeholder="Date"
+                value={edu.date}
+                onChange={(e) => updateNestedField('education', index, 'date', e.target.value)}
+              />
+              <Button variant="destructive" onClick={() => removeItem('education', index)}>Remove</Button>
+            </div>
+          ))}
+          <Button onClick={() => addItem('education', { school: '', degree: '', location: '', date: '' })}>
+            Add Education
+          </Button>
+          
+          <h3 className="text-xl font-semibold mt-4">Experience</h3>
+          {resume.experience.map((exp, index) => (
+            <div key={index} className="space-y-2 p-2 border rounded">
+              <Input
+                placeholder="Title"
+                value={exp.title}
+                onChange={(e) => updateNestedField('experience', index, 'title', e.target.value)}
+              />
+              <Input
+                placeholder="Company"
+                value={exp.company}
+                onChange={(e) => updateNestedField('experience', index, 'company', e.target.value)}
+              />
+              <Input
+                placeholder="Location"
+                value={exp.location}
+                onChange={(e) => updateNestedField('experience', index, 'location', e.target.value)}
+              />
+              <Input
+                placeholder="Date"
+                value={exp.date}
+                onChange={(e) => updateNestedField('experience', index, 'date', e.target.value)}
+              />
+              {exp.details.map((detail, detailIndex) => (
+                <div key={detailIndex} className="flex items-center space-x-2">
+                  <Input
+                    placeholder="Detail"
+                    value={detail}
+                    onChange={(e) => updateDetail('experience', index, detailIndex, e.target.value)}
+                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={() => generateAIDetail('experience', index, detailIndex)}>
+                          <Wand2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Generate AI content</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Button variant="destructive" size="icon" onClick={() => removeDetail('experience', index, detailIndex)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button onClick={() => addDetail('experience', index)}>Add Detail</Button>
+              <Button variant="destructive" onClick={() => removeItem('experience', index)}>Remove Experience</Button>
+            </div>
+          ))}
+          <Button onClick={() => addItem('experience', { title: '', company: '', location: '', date: '', details: [''] })}>
+            Add Experience
+          </Button>
+          
+          <h3 className="text-xl font-semibold mt-4">Projects</h3>
+          {resume.projects.map((project, index) => (
+            <div key={index} className="space-y-2 p-2 border rounded">
+              <Input
+                placeholder="Project Name"
+                value={project.name}
+                onChange={(e) => updateNestedField('projects', index, 'name', e.target.value)}
+              />
+              <Input
+                placeholder="Technologies"
+                value={project.technologies}
+                onChange={(e) => updateNestedField('projects', index, 'technologies', e.target.value)}
+              />
+              <Input
+                placeholder="Date"
+                value={project.date}
+                onChange={(e) => updateNestedField('projects', index, 'date', e.target.value)}
+              />
+              {project.details.map((detail, detailIndex) => (
+                <div key={detailIndex} className="flex items-center space-x-2">
+                  <Input
+                    placeholder="Detail"
+                    value={detail}
+                    onChange={(e) => updateDetail('projects', index, detailIndex, e.target.value)}
+                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={() => generateAIDetail('projects', index, detailIndex)}>
+                          <Wand2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Generate AI content</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Button variant="destructive" size="icon" onClick={() => removeDetail('projects', index, detailIndex)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button onClick={() => addDetail('projects', index)}>Add Detail</Button>
+              <Button variant="destructive" onClick={() => removeItem('projects', index)}>Remove Project</Button>
+            </div>
+          ))}
+          <Button onClick={() => addItem('projects', { name: '', technologies: '', date: '', details: [''] })}>
+            Add Project
+          </Button>
+          
+          <h3 className="text-xl font-semibold mt-4">Technical Skills</h3>
+          <div>
+            <Label htmlFor="languages">Languages</Label>
+            <Input
+              id="languages"
+              value={resume.skills.languages}
+              onChange={(e) => updateResume('skills', { ...resume.skills, languages: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="frameworks">Frameworks</Label>
+            <Input
+              id="frameworks"
+              value={resume.skills.frameworks}
+              onChange={(e) => updateResume('skills', { ...resume.skills, frameworks: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="developerTools">Developer Tools</Label>
+            <Input
+              id="developerTools"
+              value={resume.skills.developerTools}
+              onChange={(e) => updateResume('skills', { ...resume.skills, developerTools: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="libraries">Libraries</Label>
+            <Input
+              id="libraries"
+              value={resume.skills.libraries}
+              onChange={(e) => updateResume('skills', { ...resume.skills, libraries: e.target.value })}
+            />
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+      
+      <div className="w-full md:w-1/2 p-4 bg-gray-100 overflow-y-auto">
+        <div className="bg-white p-6 shadow-lg" style={{ fontFamily: 'Times New Roman, serif' }}>
+          <h1 className="text-3xl font-bold text-center mb-2">{resume.name}</h1>
+          <p className="text-center mb-4">{resume.contact}</p>
+          
+          <h2 className="text-xl font-bold mt-4 mb-2 border-b border-gray-400">EDUCATION</h2>
+          {resume.education.map((edu, index) => (
+            <div key={index} className="mb-2">
+              <div className="flex justify-between">
+                <span className="font-bold">{edu.school}</span>
+                <span>{edu.location}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="italic">{edu.degree}</span>
+                <span>{edu.date}</span>
+              </div>
+            </div>
+          ))}
+          
+          <h2 className="text-xl font-bold mt-4 mb-2 border-b border-gray-400">EXPERIENCE</h2>
+          {resume.experience.map((exp, index) => (
+            <div key={index} className="mb-4">
+              <div className="flex justify-between">
+                <span className="font-bold">{exp.title}</span>
+                <span>{exp.date}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="italic">{exp.company}</span>
+                <span>{exp.location}</span>
+              </div>
+              <ul className="list-disc list-inside">
+                {exp.details.map((detail, detailIndex) => (
+                  <li key={detailIndex}>{detail}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          
+          <h2 className="text-xl font-bold mt-4 mb-2 border-b border-gray-400">PROJECTS</h2>
+          {resume.projects.map((project, index) => (
+            <div key={index} className="mb-4">
+              <div className="flex justify-between">
+                <span className="font-bold">{project.name} | {project.technologies}</span>
+                <span>{project.date}</span>
+              </div>
+              <ul className="list-disc list-inside">
+                {project.details.map((detail, detailIndex) => (
+                  <li key={detailIndex}>{detail}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          
+          <h2 className="text-xl font-bold mt-4 mb-2 border-b border-gray-400">TECHNICAL SKILLS</h2>
+          <p><span className="font-bold">Languages:</span> {resume.skills.languages}</p>
+          <p><span className="font-bold">Frameworks:</span> {resume.skills.frameworks}</p>
+          <p><span className="font-bold">Developer Tools:</span> {resume.skills.developerTools}</p>
+          <p><span className="font-bold">Libraries:</span> {resume.skills.libraries}</p>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
